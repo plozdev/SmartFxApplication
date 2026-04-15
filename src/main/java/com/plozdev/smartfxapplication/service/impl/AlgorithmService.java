@@ -31,9 +31,19 @@ public class AlgorithmService implements AlgorithmServiceI {
     public ExchangeResponse findOptimalExchange(String from, String to, double amount) {
         log.info("Finding optimal exchange path: {} -> {} (amount: {})", from, to, amount);
 
+        // Validate currencies
         if (from == null || from.isBlank() || to == null || to.isBlank()) {
             throw new InvalidCurrencyException("Currencies 'from' and 'to' cannot be empty");
         }
+
+        // Validate amount (must be positive)
+        if (amount <= 0) {
+            throw new InvalidCurrencyException("Amount must be greater than 0");
+        }
+
+        // Normalize currency codes to uppercase (case-insensitive)
+        from = from.trim().toUpperCase(java.util.Locale.ROOT);
+        to = to.trim().toUpperCase(java.util.Locale.ROOT);
 
         Graph snapshot = graphManagement.getGraphSnapshot();
 
@@ -90,15 +100,15 @@ public class AlgorithmService implements AlgorithmServiceI {
                 if (dist[u] + w < dist[v]) {
                     dist[v] = dist[u] + w;
                     parent[v] = u;
+                    cnt[v]++;
+                    if (cnt[v] >= n)
+                        throw new ArbitrageFoundException(
+                                "⚠️ ARBITRAGE OPPORTUNITY DETECTED! Negative cycle found in the graph. " +
+                                        "This indicates a potential profit opportunity through currency exchange loop."
+                        );
                     if (!inQueue[v]) {
                         q.add(v);
                         inQueue[v] = true;
-                        cnt[v]++;
-                        if (cnt[v] > n)
-                            throw new ArbitrageFoundException(
-                                    "⚠️ ARBITRAGE OPPORTUNITY DETECTED! Negative cycle found in the graph. " +
-                                    "This indicates a potential profit opportunity through currency exchange loop."
-                            );
                     }
                 }
             }
