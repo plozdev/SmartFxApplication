@@ -22,6 +22,9 @@ public class FastForexClient {
     @Value("${fastforex.request-timeout:5000}")
     private long requestTimeout;
 
+    @Value("${fastforex.api-key}")
+    private String apiKey;
+
     /**
      * Whitelist của Major/Mainstream currencies
      */
@@ -35,13 +38,14 @@ public class FastForexClient {
 
     /**
      * FastForex API /fetch-all để lấy tỷ giá từ base currency
+     * API Key được gửi qua query parameter (not Authorization header)
      */
     public FastForexFetchAllResponse fetchAllRates(String baseCurrency) {
         try {
             log.info("Fetching rates from FastForex with base: {}", baseCurrency);
 
             Mono<FastForexFetchAllResponse> mono = webClient.get()
-                    .uri("/fetch-all?base={base}", baseCurrency)
+                    .uri("/fetch-all?base={base}&api_key={apiKey}", baseCurrency, apiKey)
                     .retrieve()
                     .bodyToMono(FastForexFetchAllResponse.class)
                     .timeout(java.time.Duration.ofMillis(requestTimeout))
