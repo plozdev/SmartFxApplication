@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: SmartFXApplication
+  profiles:
+    active: local  # ← Load application-local.yaml for API keys
 
 # OpenAPI/Swagger configuration
 springdoc:
@@ -25,4 +27,4 @@ fastforex:
   base-currency: USD
   transaction-fee: 0.003  # 0.3% per transaction (configurable)
   rate-update-interval: 30000  # milliseconds (30 seconds, configurable)
-  request-timeout: 5000  # milliseconds (5 seconds, configurable)
+  request-timeout: 15000  # milliseconds (15 seconds, increased from 5s for API latency)
