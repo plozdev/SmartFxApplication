@@ -4,6 +4,7 @@ import com.plozdev.smartfxapplication.dto.FastForexFetchAllResponse;
 import com.plozdev.smartfxapplication.model.EdgeInput;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -17,6 +18,9 @@ import java.util.stream.Collectors;
 public class FastForexClient {
 
     private final WebClient webClient;
+
+    @Value("${fastforex.request-timeout:5000}")
+    private long requestTimeout;
 
     /**
      * Whitelist của Major/Mainstream currencies
@@ -40,8 +44,9 @@ public class FastForexClient {
                     .uri("/fetch-all?base={base}", baseCurrency)
                     .retrieve()
                     .bodyToMono(FastForexFetchAllResponse.class)
+                    .timeout(java.time.Duration.ofMillis(requestTimeout))
                     .onErrorResume(e -> {
-                        log.error("Error fetching rates from FastForex", e);
+                        log.error("Error fetching rates from FastForex within timeout", e);
                         return Mono.empty();
                     });
 

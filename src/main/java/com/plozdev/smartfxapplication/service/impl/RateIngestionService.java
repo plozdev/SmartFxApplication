@@ -23,10 +23,11 @@ public class RateIngestionService {
     @Value("${fastforex.base-currency:USD}")
     private String baseCurrency;
 
-    private static final double TRANSACTION_FEE = 0.003; // 0.3%
+    @Value("${fastforex.transaction-fee:0.003}")
+    private double transactionFee;
 
-    // Runs every 30 seconds
-    @Scheduled(fixedRate = 30000)
+    // Runs at configurable interval (default 30 seconds)
+    @Scheduled(fixedRateString = "${fastforex.rate-update-interval:30000}")
     public void fetchRates() {
         try {
             log.info("Fetching real exchange rates from FastForex (base: {})...", baseCurrency);
@@ -38,20 +39,20 @@ public class RateIngestionService {
                 return;
             }
 
-            // 2️⃣ Derive tất cả edges (Direct + Reverse + Cross)
-            List<EdgeInput> edges = fastForexClient.deriveAllEdges(response, TRANSACTION_FEE);
+            // Derive tất cả edges (Direct + Reverse + Cross)
+            List<EdgeInput> edges = fastForexClient.deriveAllEdges(response, transactionFee);
 
             if (edges.isEmpty()) {
                 log.warn("No edges derived, graph not updated");
                 return;
             }
 
-            // 3️⃣ Update graph
+            // Update graph
             graphManagement.updateGraph(edges);
             log.info("Graph updated with {} edges from {} currencies",
                     edges.size(), response.getResults().size());
 
-            // 4️⃣ Log some sample rates
+            // Log some sample rates
             log.debug("Sample rates from API response:");
             response.getResults().entrySet().stream()
                     .limit(5)
