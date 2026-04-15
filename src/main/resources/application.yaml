@@ -1,3 +1,30 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: SmartFXApplication
+  profiles:
+    active: local  # ← Load application-local.yaml for API keys
+
+# OpenAPI/Swagger configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+# Logging configuration
+logging:
+  level:
+    root: INFO
+    com.plozdev.smartfxapplication: DEBUG
+
+fastforex:
+  api-key: ${FASTFOREX_API_KEY:your-api-key-here}  # Set via environment variable or application-local.yaml
+  base-url: https://api.fastforex.io
+  base-currency: USD
+  transaction-fee: 0.003  # 0.3% per transaction (configurable)
+  rate-update-interval: 30000  # milliseconds (30 seconds, configurable)
+  request-timeout: 15000  # milliseconds (15 seconds, increased from 5s for API latency)
