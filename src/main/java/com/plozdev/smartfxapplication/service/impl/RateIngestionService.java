@@ -39,7 +39,7 @@ public class RateIngestionService {
                 return;
             }
 
-            // Derive tất cả edges (Direct + Reverse + Cross)
+            // 2️⃣ Derive tất cả edges (Direct + Reverse + Cross)
             List<EdgeInput> edges = fastForexClient.deriveAllEdges(response, transactionFee);
 
             if (edges.isEmpty()) {
@@ -47,12 +47,12 @@ public class RateIngestionService {
                 return;
             }
 
-            // Update graph
+            // 3️⃣ Update graph
             graphManagement.updateGraph(edges);
             log.info("Graph updated with {} edges from {} currencies",
                     edges.size(), response.getResults().size());
 
-            // Log some sample rates
+            // 4️⃣ Log some sample rates
             log.debug("Sample rates from API response:");
             response.getResults().entrySet().stream()
                     .limit(5)
