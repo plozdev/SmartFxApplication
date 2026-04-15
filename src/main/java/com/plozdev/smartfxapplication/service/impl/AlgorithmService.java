@@ -38,7 +38,7 @@ public class AlgorithmService implements AlgorithmServiceI {
 
         // Validate amount (must be positive)
         if (amount <= 0) {
-            throw new InvalidCurrencyException("Amount must be greater than 0");
+            throw new IllegalArgumentException("Amount must be greater than 0");
         }
 
         // Normalize currency codes to uppercase (case-insensitive)
