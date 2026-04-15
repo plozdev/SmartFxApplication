@@ -18,3 +18,8 @@ logging:
   level:
     root: INFO
     com.plozdev.smartfxapplication: DEBUG
+
+fastforex:
+  api-key: ${FASTFOREX_API_KEY:your-api-key-here}  # Set via environment variable or application-local.yaml
+  base-url: https://api.fastforex.io
+  base-currency: USD
