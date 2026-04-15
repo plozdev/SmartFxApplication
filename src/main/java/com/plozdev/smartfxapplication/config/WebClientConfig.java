@@ -11,14 +11,10 @@ public class WebClientConfig {
     @Value("${fastforex.base-url}")
     private String baseUrl;
 
-    @Value("${fastforex.api-key}")
-    private String apiKey;
-
     @Bean
     public WebClient webClient() {
         return WebClient.builder()
                 .baseUrl(baseUrl)
-                .defaultHeader("Authorization", "Bearer " + apiKey)
                 .build();
     }
 }
