@@ -23,3 +23,6 @@ fastforex:
   api-key: ${FASTFOREX_API_KEY:your-api-key-here}  # Set via environment variable or application-local.yaml
   base-url: https://api.fastforex.io
   base-currency: USD
+  transaction-fee: 0.003  # 0.3% per transaction (configurable)
+  rate-update-interval: 30000  # milliseconds (30 seconds, configurable)
+  request-timeout: 5000  # milliseconds (5 seconds, configurable)
