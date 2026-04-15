@@ -1,32 +1,79 @@
 package com.plozdev.smartfxapplication.service.impl;
 
+import com.plozdev.smartfxapplication.dto.ExchangeResponse;
+import com.plozdev.smartfxapplication.exception.ArbitrageFoundException;
 import com.plozdev.smartfxapplication.exception.InfiniteCycleException;
+import com.plozdev.smartfxapplication.exception.InvalidCurrencyException;
+import com.plozdev.smartfxapplication.exception.NoPathFoundException;
 import com.plozdev.smartfxapplication.model.Edge;
-import com.plozdev.smartfxapplication.model.EdgeInput;
 import com.plozdev.smartfxapplication.model.Graph;
 import com.plozdev.smartfxapplication.model.SPFAResult;
 import com.plozdev.smartfxapplication.service.AlgorithmServiceI;
+import com.plozdev.smartfxapplication.service.GraphManagementI;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class AlgorithmService implements AlgorithmServiceI {
+
+    private final GraphManagementI graphManagement;
+
+    /**
+     * Main Business Logic: Find optimal exchange path
+     * Validates currencies → Runs SPFA → Detects arbitrage → Calculates result
+     */
+    @Override
+    public ExchangeResponse findOptimalExchange(String from, String to, double amount) {
+        log.info("Finding optimal exchange path: {} -> {} (amount: {})", from, to, amount);
+
+        if (from == null || from.isBlank() || to == null || to.isBlank()) {
+            throw new InvalidCurrencyException("Currencies 'from' and 'to' cannot be empty");
+        }
+
+        Graph snapshot = graphManagement.getGraphSnapshot();
+
+        if (!snapshot.getId().containsKey(from) || !snapshot.getId().containsKey(to)) {
+            throw new InvalidCurrencyException("Currency not supported in the current graph");
+        }
+
+        int sourceId = snapshot.getId(from);
+        int targetId = snapshot.getId(to);
+
+        SPFAResult result = findBestPath(snapshot, sourceId);
+
+        if (result == null || result.getDist()[targetId] == Double.MAX_VALUE) {
+            throw new NoPathFoundException("No exchange path found from " + from + " to " + to);
+        }
+
+        List<Integer> pathIds = getPath(targetId, result.getParent());
+        List<String> currencyPath = toCurrencyPath(snapshot, pathIds);
+
+        double finalRate = Math.exp(-result.getDist()[targetId]);
+        double finalAmount = amount * finalRate;
+
+        log.info("Exchange found: {} → {} with rate {}", from, to, finalRate);
+
+        return new ExchangeResponse(from, to, amount, finalAmount, finalRate, currencyPath);
+    }
 
     @Override
     public SPFAResult findBestPath(Graph graph, int source) {
         int n = graph.size();
 
         double[] dist = new double[n];
-        int[] parent = new int[n];// trace route
-        boolean[] inQueue = new boolean[n];//track co trong queue chua
-        int[] cnt = new int[n];//phat hien chu trinh am
+        int[] parent = new int[n];
+        boolean[] inQueue = new boolean[n];
+        int[] cnt = new int[n];
         Queue<Integer> q = new LinkedList<>();
 
         Arrays.fill(dist, Double.MAX_VALUE);
         Arrays.fill(parent, -1);
         Arrays.fill(inQueue, false);
-
 
         dist[source] = 0;
         q.add(source);
@@ -48,14 +95,17 @@ public class AlgorithmService implements AlgorithmServiceI {
                         inQueue[v] = true;
                         cnt[v]++;
                         if (cnt[v] > n)
-                            return new SPFAResult(dist, parent, true);
+                            throw new ArbitrageFoundException(
+                                    "⚠️ ARBITRAGE OPPORTUNITY DETECTED! Negative cycle found in the graph. " +
+                                    "This indicates a potential profit opportunity through currency exchange loop."
+                            );
                     }
                 }
             }
         }
 
         return new SPFAResult(dist, parent, false);
-            }
+    }
 
     @Override
     public List<Integer> getPath(int target, int[] parent) {
@@ -64,7 +114,7 @@ public class AlgorithmService implements AlgorithmServiceI {
 
         for (int cur = target; cur != -1; cur = parent[cur]) {
             if (vis.contains(cur))
-                throw new InfiniteCycleException("Vòng lặp vô tận được phát hiện trong quá trình truy ngược đường đi! Hệ thống nghi ngờ có chu trình Arbitrage âm chèn ép dữ liệu.");
+                throw new InfiniteCycleException("Infinite loop detected during path reconstruction! System suspects a negative arbitrage cycle.");
             path.add(cur);
             vis.add(cur);
         }
