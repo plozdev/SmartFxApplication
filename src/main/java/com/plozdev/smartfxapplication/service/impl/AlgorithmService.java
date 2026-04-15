@@ -101,11 +101,10 @@ public class AlgorithmService implements AlgorithmServiceI {
                     dist[v] = dist[u] + w;
                     parent[v] = u;
                     cnt[v]++;
-                    if (cnt[v] >= n)
-                        throw new ArbitrageFoundException(
-                                "⚠️ ARBITRAGE OPPORTUNITY DETECTED! Negative cycle found in the graph. " +
-                                        "This indicates a potential profit opportunity through currency exchange loop."
-                        );
+                    if (cnt[v] >= n) {
+                        log.warn("Negative cycle detected in graph during SPFA traversal; potential arbitrage opportunity found.");
+                        throw new ArbitrageFoundException("Arbitrage detected");
+                    }
                     if (!inQueue[v]) {
                         q.add(v);
                         inQueue[v] = true;
