@@ -1,10 +1,6 @@
 package com.plozdev.smartfxapplication.controller;
 
 import com.plozdev.smartfxapplication.dto.ExchangeResponse;
-import com.plozdev.smartfxapplication.exception.InvalidCurrencyException;
-import com.plozdev.smartfxapplication.exception.NoPathFoundException;
-import com.plozdev.smartfxapplication.model.Graph;
-import com.plozdev.smartfxapplication.model.SPFAResult;
 import com.plozdev.smartfxapplication.service.AlgorithmServiceI;
 import com.plozdev.smartfxapplication.service.GraphManagementI;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,48 +30,14 @@ public class ExchangeController {
             @RequestParam String to,
             @RequestParam double amount) {
 
-        if (from == null || from.isBlank() || to == null || to.isBlank()) {
-            throw new InvalidCurrencyException("Currencies 'from' and 'to' cannot be empty");
-        }
-
-        Graph snapshot = graphManagement.getGraphSnapshot();
-
-        if (!snapshot.getId().containsKey(from) || !snapshot.getId().containsKey(to)) {
-            throw new InvalidCurrencyException("Currency not supported in the current graph");
-        }
-
-        int sourceId = snapshot.getId(from);
-        int targetId = snapshot.getId(to);
-
-        SPFAResult result = algorithmService.findBestPath(snapshot, sourceId);
-
-        // check if target is reachable
-        if (result == null || result.getDist()[targetId] == Double.MAX_VALUE) {
-            throw new NoPathFoundException("No exchange path found from " + from + " to " + to);
-        }
-
-        List<Integer> pathIds = algorithmService.getPath(targetId, result.getParent());
-        List<String> stringPath = algorithmService.toCurrencyPath(snapshot, pathIds);
-
-        double finalRate = Math.exp(-result.getDist()[targetId]);
-        double finalAmount = amount * finalRate;
-
-        ExchangeResponse response = new ExchangeResponse(
-                from,
-                to,
-                amount,
-                finalAmount,
-                finalRate,
-                stringPath
-        );
-
+        ExchangeResponse response = algorithmService.findOptimalExchange(from, to, amount);
+        
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/currencies")
     @Operation(summary = "Get a list of all currently supported currencies for the Dropdown")
     public ResponseEntity<List<String>> getAvailableCurrencies() {
-        Graph snapshot = graphManagement.getGraphSnapshot();
-        return ResponseEntity.ok(snapshot.getReverse());
+        return ResponseEntity.ok(graphManagement.getGraphSnapshot().getReverse());
     }
 }
