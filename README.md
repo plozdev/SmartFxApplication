@@ -1,889 +1,249 @@
-﻿# SmartFX - High-Performance Currency Exchange & Arbitrage Detection Engine
+﻿# SmartFX Application
 
-> A Spring Boot 3 application that finds the most cost-effective path to transfer money between currencies using **Graph Theory (Bellman-Ford SPFA Algorithm)** and detects **Arbitrage opportunities** in real-time.
+A Spring Boot application that finds optimal currency exchange paths using graph algorithms and detects arbitrage opportunities in real-time.
 
-## Table of Contents
+## Quick Start
 
-- [Overview](#overview)
-- [Features](#features)
-- [Technical Stack](#technical-stack)
-- [Prerequisites](#prerequisites)
-- [Setup & Installation](#setup--installation)
-- [Running the Application](#running-the-application)
-- [API Documentation](#api-documentation)
-- [Architecture](#architecture)
-- [Key Algorithms](#key-algorithms)
-- [Project Structure](#project-structure)
-- [Development Notes](#development-notes)
+### Prerequisites
+- Java 25+
+- Maven 3.9+
+- FastForex API key ([get free trial](https://www.fastforex.io))
 
----
+### Setup
 
-## Overview
+1. **Clone & navigate**
+   ```bash
+   git clone https://github.com/plozdev/SmartFXApplication.git
+   cd SmartFXApplication
+   ```
 
-**SmartFX** is designed to:
+2. **Configure API key** - Create `src/main/resources/application-local.yaml`:
+   ```yaml
+   fastforex:
+     api-key: YOUR_FASTFOREX_API_KEY_HERE
+     base-url: https://api.fastforex.io
+     base-currency: USD
+   ```
 
-1. **Find Optimal Exchange Paths**: Given 2 currencies and an amount, it calculates the **best exchange path** considering multiple intermediate currencies
-2. **Detect Arbitrage Opportunities**: Identifies **negative cycles** in the exchange rate graph that indicate profit opportunities
-3. **Real-time Rate Updates**: Fetches live exchange rates from **FastForex API** every 30 seconds
-4. **Thread-Safe Operations**: Uses ReadWriteLock to ensure safe concurrent access
+3. **Build & run**
+   ```bash
+   mvn clean install
+   mvn spring-boot:run
+   ```
 
-### Example Use Case
-
-
-User Scenario:
-- Want to convert 1,000,000 VND KWD
-- Possible paths:
- Direct: VND KWD (may have high fees/bad rate)
- Optimal: VND USD KWD (better rate after fee calculation)
- 
-SmartFX finds the optimal path automatically!
-
-
----
+   Access the app at `http://localhost:8080`
 
 ## Features
 
-### Core Features
-- **Optimal Path Finding**: SPFA algorithm with weight transformation
-- **Arbitrage Detection**: Identifies negative cycles (profit opportunities)
-- **Real-time Data**: 40+ major currencies updated every 30 seconds
-- **Fee Handling**: 0.3% transaction fee per hop
-- **Thread Safety**: ReadWriteLock for concurrent graph access
-- **API Documentation**: Swagger/OpenAPI integration
+- **Optimal Path Finding** - Uses SPFA (Bellman-Ford) algorithm to find best exchange routes
+- **Arbitrage Detection** - Identifies profitable negative cycles in real-time
+- **Real-time Rates** - Updates exchange rates every 30 seconds from FastForex API
+- **40+ Currencies** - Supports major global currencies
+- **Thread-Safe** - Concurrent access with ReadWriteLock
+- **API Documentation** - Interactive Swagger UI at `/swagger-ui.html`
 
-### Advanced Features
-- **Graph Derivation**: Automatically creates cross-rates between all currency pairs
-- **Major Currency Whitelist**: Filters out exotic currencies to prevent edge cases
-- **Sanity Checks**: Validates exchange rates (0.001 - 1000 range)
-- **Comprehensive Logging**: Tracks rate updates, path finding, arbitrage detection
-- **Fast Execution**: Optimized SPFA for large graphs (1600+ edges)
+## API Endpoints
 
----
+### Exchange Rates
 
-## Technical Stack
-
-| Component | Technology | Version |
-|-----------|-----------|---------|
-| **Framework** | Spring Boot | 4.0.5 |
-| **Java** | JDK | 25 |
-| **HTTP Client** | WebFlux (Async) | 4.0.5 |
-| **Data Format** | Jackson JSON | Built-in |
-| **ORM** | JPA | 4.0.5 |
-| **API Docs** | SpringDoc OpenAPI | 3.0.2 |
-| **Build Tool** | Maven | 3.14.1 |
-| **Logging** | SLF4J + Logback | Built-in |
-| **Utilities** | Lombok | Latest |
-
-### External APIs
-- **FastForex**: Real-time currency exchange rates
- - Endpoint: https://api.fastforex.io
- - Update Frequency: 30 seconds
- - Supported Currencies: 160+
-
----
-
-## Prerequisites
-
-Before running, ensure you have:
-
-- **Java 25+** installed
-- **Maven 3.9+** installed
-- **Git** for version control
-- **FastForex Trial API Key** (get from [fastforex.io](https://www.fastforex.io))
- - Free tier: 1,500 requests/month (plenty for development)
-
-### Verify Java Installation
-
-bash
-java -version
-# Output: java version "25" ...
-
-mvn -version
-# Output: Apache Maven 3.9+ ...
-
-
----
-
-## Setup & Installation
-
-### 1. Clone the Repository
-
-bash
-git clone https://github.com/plozdev/SmartFXApplication.git
-cd SmartFXApplication
-
-
-### 2. Configure API Key
-
-Create src/main/resources/application-local.yaml:
-
-yaml
-# LOCAL ONLY - DO NOT COMMIT
-# Copy your FastForex API key here
-
-fastforex:
- api-key: YOUR_FASTFOREX_API_KEY_HERE
- base-url: https://api.fastforex.io
- base-currency: USD
-
-
-**Get your API key:**
-1. Visit [FastForex Dashboard](https://www.fastforex.io)
-2. Sign up (trial available)
-3. Copy your API key from settings
-4. Paste into application-local.yaml
-
-### 3. Build the Project
-
-bash
-mvn clean install
-
-
-Expected output:
-
-[INFO] BUILD SUCCESS
-[INFO] Total time: XX.XXX s
-
-
----
-
-## Running the Application
-
-### Option 1: Run with Maven
-
-bash
-mvn spring-boot:run
-
-
-### Option 2: Run as Standalone JAR
-
-bash
-mvn clean package
-java -jar target/SmartFXApplication-0.0.1-SNAPSHOT.jar
-
-
-### Expected Startup Output
-
-
-2026-04-15 12:00:00.000 INFO o.s.b.w.e.t.TomcatWebServer : 
- Tomcat started on port(s): 8080 (http) with context path ''
-
-2026-04-15 12:00:05.123 INFO c.p.s.s.i.RateIngestionService : 
- Fetching real exchange rates from FastForex (base: USD)...
-
-2026-04-15 12:00:06.456 INFO c.p.s.s.i.RateIngestionService : 
- Graph updated with 1599 edges from 40 major currencies
-
-
-### Verify Application is Running
-
-bash
-curl http://localhost:8080/api/v1/currencies
-
-
-**Expected Response:**
-json
-["USD", "EUR", "GBP", "JPY", "CHF", "AUD", "CAD", ...]
-
-
----
-
-## API Documentation
-
-### Base URL
-
-http://localhost:8080
-
-
-### Swagger/OpenAPI UI
-
-http://localhost:8080/swagger-ui.html
-
-
----
-
-### Endpoint 1: Find Optimal Exchange Path
-
-**Request:**
-http
+**Find optimal exchange path**
+```
 GET /api/v1/exchange?from=USD&to=VND&amount=1000
+```
 
-
-| Parameter | Type | Required | Example | Description |
-|-----------|------|----------|---------|-------------|
-| from | String | | USD | Source currency code |
-| to | String | | VND | Target currency code |
-| amount | Double | | 1000 | Amount to exchange |
-
-**Success Response (200 OK):**
-json
+Response:
+```json
 {
- "from": "USD",
- "to": "VND",
- "initialAmount": 1000,
- "finalAmount": 24500000.50,
- "effectiveRate": 24500.00050,
- "path": ["USD", "VND"]
+  "from": "USD",
+  "to": "VND",
+  "initialAmount": 1000,
+  "finalAmount": 24500000.50,
+  "effectiveRate": 24500.00050,
+  "path": ["USD", "VND"]
 }
+```
 
+Errors:
+- `400 InvalidCurrencyException` - Currency not supported
+- `404 NoPathFoundException` - No exchange path available
+- `400 ArbitrageFoundException` - Profitable cycle detected (includes `arbitrageCycle` details)
 
-**Field Descriptions:**
-- initialAmount: Input amount (what you're sending)
-- finalAmount: Output amount (what you receive after all hops & fees)
-- effectiveRate: finalAmount / initialAmount (already includes all fees)
-- path: List of currencies in the optimal path
-
-**Error Response (400):**
-json
-{
- "timestamp": "2026-04-15T12:00:00Z",
- "status": 400,
- "error": "InvalidCurrencyException",
- "message": "Currency not supported in the current graph"
-}
-
-
-**Possible Errors:**
-- InvalidCurrencyException (400): Currency not supported
-- NoPathFoundException (404): No exchange path found between currencies
-- InfiniteCycleException (422): **Arbitrage detected!** Negative cycle in graph
-
----
-
-**Error Response (400 - Arbitrage Detected):**
-json
-{
- "timestamp": "2026-04-17T10:30:45Z",
- "status": 400,
- "message": "Arbitrage detected! Cycle: USD -> EUR -> JPY -> USD",
- "path": "/api/v1/exchange?from=USD&to=JPY&amount=100",
- "details": {
- "arbitrageCycle": "USD -> EUR -> JPY -> USD"
- }
-}
-
-
-**When Arbitrage is Detected:**
-- The SPFA algorithm finds a negative cycle (profitable path)
-- Exception is thrown with the cycle path
-- Response includes details.arbitrageCycle showing the profitable route
-- FE can use this to alert users: "Found profit opportunity: USD EUR JPY USD"
-
----
-
-### Endpoint 2: Get Available Currencies
-
-**Request:**
-http
+**Get available currencies**
+```
 GET /api/v1/currencies
+```
 
+Returns: `["USD", "EUR", "GBP", "JPY", ...]`
 
-**Response (200 OK):**
-json
-[
- "USD", "EUR", "GBP", "JPY", "CHF", "AUD", "CAD", "NZD",
- "CNY", "SEK", "NOK", "DKK", "MXN", "ZAR", "INR", "KRW",
- "SGD", "HKD", "TWD", "THB", "IDR", "PHP", "MYR", "VND",
- "BRL", "CLP", "COP", "PEN", "ARS", "RUB", "TRY", "SAR",
- "AED", "QAR", "KWD", "IQD", "EGP", "NGN", "GHS", "PKR"
-]
+### Demo & Testing
 
-
-**Usage Tips:**
-- Use this for dropdowns/autocomplete in FE
-- Returns 40+ major currencies (filtered from 160+ available)
-- Updated every 30 seconds when rates change
-
----
-
-### Endpoint 3: Demo - Reset to Fresh API Rates
-
-**Purpose**: Reset graph to latest API rates (no arbitrage)
-
-**Request:**
-http
+**Reset to fresh API rates**
+```
 POST /api/v1/demo/reset
+```
 
-
-**Response (200 OK):**
-json
-{
- "status": "success",
- "msg": "Reset to fresh API rates (no arbitrage)",
- "nextStep": "Try /api/v1/exchange?from=USD&to=JPY&amount=100 (should succeed)"
-}
-
-
-**Usage:**
-1. Call this endpoint to reset graph to clean state
-2. At this point, no arbitrage opportunities exist (real market rates)
-3. Try calling /api/v1/exchange - should return normal results
-
----
-
-### Endpoint 4: Demo - Inject Arbitrage Edge
-
-**Purpose**: Inject a single profitable edge to create an arbitrage cycle
-
-**Request:**
-http
+**Inject arbitrage edge** (for testing)
+```
 POST /api/v1/demo/inject-arbitrage?from=JPY&to=USD&rate=0.0082
+```
 
+### Demo Workflow
 
-| Parameter | Type | Required | Example | Description |
-|-----------|------|----------|---------|-------------|
-| from | String | | JPY | Source currency |
-| to | String | | USD | Target currency |
-| rate | Double | | 0.0082 | Exchange rate for this edge |
-
-**Response (200 OK):**
-json
-{
- "status": "success",
- "msg": "Edge injected: JPY -> USD (rate: 0.0082)",
- "injectedEdge": {
- "from": "JPY",
- "to": "USD",
- "rate": 0.0082,
- "fee": 0.003,
- "weight": -4.812
- },
- "nextStep": "Call /api/v1/exchange to detect cycle",
- "expectedResult": "ArbitrageFoundException with cycle path in response"
-}
-
-
-**Demo Workflow:**
-
-**Step 1: Reset**
-bash
+```bash
+# 1. Reset graph to clean state
 curl -X POST http://localhost:8080/api/v1/demo/reset
 
-Expected: Graph is clean with real API rates
-
-**Step 2: Inject Profitable Edge**
-bash
-curl -X POST "http://localhost:8080/api/v1/demo/inject-arbitrage?from=JPY&to=USD&rate=0.0082"
-
-Expected: Edge JPYUSD is added to graph
-
-**Step 3: Trigger Arbitrage Detection**
-bash
+# 2. Normal exchange (should succeed)
 curl "http://localhost:8080/api/v1/exchange?from=USD&to=JPY&amount=100"
 
+# 3. Inject profitable edge to trigger arbitrage
+curl -X POST "http://localhost:8080/api/v1/demo/inject-arbitrage?from=JPY&to=USD&rate=0.0082"
 
-**Expected Response (400 - Arbitrage Found):**
-json
-{
- "timestamp": "2026-04-17T10:30:45Z",
- "status": 400,
- "message": "Arbitrage detected! Cycle: USD -> EUR -> JPY -> USD",
- "path": "/api/v1/exchange?from=USD&to=JPY&amount=100",
- "details": {
- "arbitrageCycle": "USD -> EUR -> JPY -> USD"
- }
-}
+# 4. Now arbitrage is detected
+curl "http://localhost:8080/api/v1/exchange?from=USD&to=JPY&amount=100"
+# Response (400): Arbitrage detected! Cycle: USD -> EUR -> JPY -> USD
+```
 
+## Technology Stack
 
-**Why This Works:**
-1. Real rates: USDEUR (0.92), EURJPY (151)
-2. Injected: JPYUSD (0.0082, much better than market!)
-3. Cycle profit: 0.92 151 0.0082 1.14 (14% gain per loop!)
-4. SPFA detects negative weight cycle Arbitrage!
+| Component | Technology |
+|-----------|-----------|
+| Framework | Spring Boot 4.0.5 |
+| Java | JDK 25 |
+| HTTP Client | WebFlux (async) |
+| API Docs | SpringDoc OpenAPI 3.0.2 |
+| Build | Maven 3.9+ |
+| Logging | SLF4J + Logback |
 
----
+## How It Works
 
-## Architecture
+### SPFA Algorithm
+- **Purpose**: Find shortest path in graph with negative weights (exchange rates)
+- **Complexity**: O(E) to O(nE) depending on graph structure
+- **Speed**: ~5-10ms for 40 currencies + 1600 edges
+- **Arbitrage Detection**: Identifies negative cycles that indicate profit opportunities
 
-### High-Level Overview
+### Weight Transformation
+Exchange rates are converted to weights using: `Weight = -log(Rate × (1 - Fee))`
 
+This converts the multiplication problem (finding max product path) into an addition problem (finding min weight path), which SPFA can solve efficiently.
 
+### Graph Construction
+From one base currency (USD), we derive:
+- **Direct edges**: USD → EUR, USD → VND, etc. (~40)
+- **Reverse edges**: EUR → USD, VND → USD, etc. (~40)
+- **Cross edges**: EUR → VND, GBP → JPY, etc. (~1520)
 
- REST Controllers 
- 
- ExchangeController DemoController 
- - GET /exchange - POST /demo/reset 
- - GET /currencies - POST /demo/inject-arbitrage 
- 
-
- 
- 
-
- Service Layer 
- 
- AlgorithmService DemoService 
- - findOptimalExchange() - reset() [triggers RateIngestion] 
- - findBestPath() [SPFA] - injectArbitrage() [adds edge] 
- - findArbitrage() - (orchestrates other services) 
- 
-
- 
- 
-
- Core Services (Shared) 
- 
- GraphManagementI (Thread-Safe with ReadWriteLock) 
- - updateGraph(List<EdgeInput>) [batch: from API] 
- - addEdge(EdgeInput) [single: for injection] 
- - getGraphSnapshot() 
- 
- 
- 
- 
- RateIngestionService (Scheduled: @30s) 
- - fetchRates() [Updates graph with real API data] 
- - Dependencies: FastForexClient, GraphManagementI 
- 
-
- 
- 
-
- FastForex Client & API 
- 
- FastForexClient 
- - fetchAllRates() Get rates from FastForex API 
- - deriveAllEdges() Calculate all edge weights 
- Direct edges (USD EUR, ...) 
- Reverse edges (EUR USD, ...) 
- Cross edges (EUR JPY, ...) 
- Result: ~1600 edges from 40 major currencies 
- 
-
-
-
- Global Exception Handler 
- 
- Exceptions ErrorResponse with details 
- - InvalidCurrencyException (400) 
- - NoPathFoundException (404) 
- - ArbitrageFoundException (400) includes arbitrageCycle path 
- - InfiniteCycleException (422) 
- 
-
-
-
-### Data Flow: Normal Exchange Request
-
-
-User Request: GET /exchange?from=USD&to=JPY&amount=100
- 
-ExchangeController validates params
- 
-AlgorithmService.findOptimalExchange()
- Get graph snapshot (read lock)
- Run SPFA (Bellman-Ford) detect shortest path
- 
- Check: cnt[v] >= n?
- YES Negative cycle found
- Call findArbitrage(v) to get cycle path
- Throw ArbitrageFoundException with cycle path
- 
- NO Continue normally
- 
- Reconstruct path using parent array
- Calculate final amount = amount rate (fees included)
- 
-Return ExchangeResponse 
- OR
-Return ErrorResponse with arbitrageCycle path (ArbitrageFoundException)
-
-
-### Data Flow: Demo Arbitrage Injection
-
-
-Step 1: POST /demo/reset
- 
-DemoController.reset()
- DemoService.reset()
- RateIngestionService.fetchRates()
- Update graph with fresh API rates (no arbitrage)
- 
-Response: Graph is clean
-
-Step 2: POST /demo/inject-arbitrage?from=JPY&to=USD&rate=0.0082
- 
-DemoController.injectArbitrage()
- DemoService.injectArbitrage()
- GraphManagementService.addEdge() Add single edge
- Update graph to include injected edge
- 
-Response: Edge injected, now arbitrage cycle exists
-
-Step 3: GET /exchange?from=USD&to=JPY&amount=100
- 
-ExchangeController.findOptimalExchange()
- AlgorithmService detects cycle: USD EUR JPY USD
- Cycle weight = negative (profitable!)
- ArbitrageFoundException("Arbitrage detected!", ["USD", "EUR", "JPY", "USD"])
- 
-GlobalExceptionHandler catches exception
- Extract cycle path from exception
- Return 400 response with arbitrageCycle in details:
- {
- "message": "Arbitrage detected! Cycle: USD -> EUR -> JPY -> USD",
- "details": {
- "arbitrageCycle": "USD -> EUR -> JPY -> USD"
- }
- }
-
-
----
-
-## Key Algorithms
-
-### 1. SPFA (Shortest Path Faster Algorithm - Bellman-Ford)
-
-**Purpose**: Find minimum weight path in directed graph with negative weights
-
-**Complexity**:
-- **Best case**: O(E) where E = edges
-- **Average case**: O(E n)
-- **Worst case**: O(n E)
-
-**Our implementation**:
-- n = 40 vertices (major currencies)
-- E 1600 edges (Direct + Reverse + Cross)
-- **Execution time**: ~5-10ms
-
-**Detects Negative Cycles**:
-
-If any vertex is updated after n-1 iterations
- Negative cycle exists
- Arbitrage opportunity found!
-
-
-### 2. Weight Transformation
-
-**Formula:**
-
-Weight = -log(Rate (1 - Fee))
-
-Example:
- Rate = 24500 (VND per USD)
- Fee = 0.003 (0.3%)
- Weight = -log(24500 0.997)
- = -log(24432.5)
- -10.102
-
-
-**Why -log?**
-- Converts multiplication addition (for path calculations)
-- Max product path Min weight path (SPFA friendly)
-- Allows Bellman-Ford to find best exchange route
-
-### 3. Edge Derivation (Full Mesh Graph)
-
-Given rates from **1 base currency** (USD), we derive:
-
-
-1 Direct Edges: USD EUR, USD VND, ... (~40 edges)
-2 Reverse Edges: EUR USD, VND USD, ... (~40 edges)
-3 Cross Edges: EUR VND, GBP JPY, ... (~1520 edges)
-
-Total: ~1600 edges from 40 vertices
-
-
-**Mathematical Basis:**
-
-Cross-rate formula:
- VND KWD = (1 / rate_USD_VND) rate_USD_KWD
-
-This allows SPFA to find paths like:
- VND USD KWD (if better than direct)
- EUR GBP JPY (indirect path)
-
-
----
+**Total**: ~1600 edges from 40 vertices, allowing complex multi-hop paths
 
 ## Project Structure
 
+```
+src/main/java/com/plozdev/smartfxapplication/
+├── controller/           # REST API endpoints
+├── service/
+│   ├── AlgorithmServiceI.java
+│   ├── GraphManagementI.java
+│   ├── RateIngestionServiceI.java
+│   └── impl/             # Service implementations
+├── client/               # FastForex API client
+├── model/                # Graph, Edge, SPFA result
+├── dto/                  # Request/response objects
+├── config/               # WebClient, Swagger, Scheduling
+└── exception/            # Global exception handler
+```
 
-SmartFXApplication/
- src/main/java/com/plozdev/smartfxapplication/
- controller/
- ExchangeController.java # REST API endpoints
- 
- service/
- AlgorithmServiceI.java # Interface
- GraphManagementI.java # Interface
- impl/
- AlgorithmService.java # SPFA algorithm
- GraphManagementService.java # Thread-safe graph
- RateIngestionService.java # 30-second rate updater
- 
- client/
- FastForexClient.java # API integration
- 
- model/
- Graph.java # Graph data structure
- Edge.java # Edge representation
- EdgeInput.java # Edge input with weight
- SPFAResult.java # Algorithm result
- 
- dto/
- ExchangeResponse.java # API response DTO
- api/
- FastForexFetchAllResponse.java # API response mapping
- 
- config/
- WebClientConfig.java # WebClient bean
- OpenApiConfig.java # Swagger config
- SchedulingConfig.java # Task scheduling
- 
- exception/
- GlobalExceptionHandler.java # Exception mapping
- InvalidCurrencyException.java
- NoPathFoundException.java
- InfiniteCycleException.java
+## Screenshots
 
- src/main/resources/
- application.yaml # Default config
- application-local.yaml # Local API key (gitignored)
+### Screen 1: Normal Exchange
+Shows the main exchange interface with:
+- Currency swap panel (left) - Enter amount and select from/to currencies
+- Optimal conversion route display (right) - Shows calculated path and result
+- Recent activity log - History of successful exchanges
+- Market pulse indicator - System status
 
- pom.xml # Maven dependencies
+Use case: User performs a normal exchange USD → EUR with optimal path calculation
 
+### Screen 2: After Arbitrage Injection
+Demonstrates the demo/inject endpoint being used:
+- Same interface layout
+- But now an arbitrage edge has been injected into the graph
+- Recent activity shows injected edge information
+- System ready to detect the cycle
 
----
+Use case: Backend testing - call `/api/v1/demo/inject-arbitrage?from=JPY&to=USD&rate=0.0082`
 
-## Development Notes
+### Screen 3: Arbitrage Detected on Exchange
+Shows what happens when user tries to exchange after injection:
+- Exchange request triggers arbitrage detection
+- Optimal conversion route displays the **profitable cycle** instead of normal path
+- Example: USD → EUR → JPY → USD (14% profit detected)
+- Alert/highlight on arbitrage cycle
+- Recent activity logs the arbitrage opportunity
 
-### For Frontend Developers
+Use case: System detects: "Arbitrage found! Cycle: USD → EUR → JPY → USD"
 
-#### Making API Calls
+## Configuration
 
-javascript
-// Example: Find optimal exchange path
-const response = await fetch(
- 'http://localhost:8080/api/v1/exchange?from=USD&to=VND&amount=1000'
-);
+Edit `src/main/resources/application.yaml`:
+- `fastforex.transaction-fee` - Transaction fee per hop (default: 0.003)
+- Rate update frequency - See `RateIngestionService` `@Scheduled` annotation
+
+## Development
+
+### Frontend Integration
+
+```javascript
+// Find exchange path
+const response = await fetch('/api/v1/exchange?from=USD&to=VND&amount=1000');
 const result = await response.json();
 
-// Handle errors
-if (!response.ok) {
- const error = await response.json();
- console.error(Error: ${error.message});
- // Show error message to user
+// Handle arbitrage
+if (response.status === 400 && result.details?.arbitrageCycle) {
+  console.log('Profit opportunity:', result.details.arbitrageCycle);
 }
 
+// Get currencies for dropdown
+const currencies = await fetch('/api/v1/currencies').then(r => r.json());
+```
 
-#### Handling Special Cases
+### Testing
 
-**1. Arbitrage Detected (Status 422):**
-json
-{
- "status": 422,
- "error": "InfiniteCycleException",
- "message": " ARBITRAGE OPPORTUNITY DETECTED!..."
-}
-
- Show special UI indicating profit opportunity
-
-**2. Currency Not Supported (Status 400):**
-json
-{
- "status": 400,
- "error": "InvalidCurrencyException",
- "message": "Currency not supported..."
-}
-
- Use /api/v1/currencies endpoint for dropdown validation
-
-**3. No Path Found (Status 404):**
-json
-{
- "status": 404,
- "error": "NoPathFoundException",
- "message": "No exchange path found..."
-}
-
- Should never happen with major currencies (all are connected)
-
-#### Performance Considerations
-
-- **Rate updates**: Every 30 seconds (wait before calling API again)
-- **Graph size**: 40 currencies ~40 edges each = 1600 edges
-- **SPFA execution**: ~5-10ms per request (fast enough for real-time)
-- **API response time**: ~100-300ms (network latency)
-
-#### Testing with cURL
-
-bash
-# Get currencies list
+```bash
+# Get all currencies
 curl http://localhost:8080/api/v1/currencies
 
-# Exchange USD to VND
-curl 'http://localhost:8080/api/v1/exchange?from=USD&to=VND&amount=1000'
+# Test exchange
+curl "http://localhost:8080/api/v1/exchange?from=USD&to=EUR&amount=100"
 
-# Test with Swagger UI
+# Swagger UI
 open http://localhost:8080/swagger-ui.html
-
-
----
-
-### For Backend Developers
-
-#### Testing Demo Endpoints (Arbitrage Injection)
-
-**Step-by-step demo workflow:**
-
-bash
-# Step 1: Reset to fresh API rates (no arbitrage)
-curl -X POST http://localhost:8080/api/v1/demo/reset
-Response: {"status": "success", "msg": "Reset to fresh API rates (no arbitrage)"}
-
-# Step 2: Verify normal exchange works (no cycle)
-curl 'http://localhost:8080/api/v1/exchange?from=USD&to=JPY&amount=100'
-Response: {"from": "USD", "to": "JPY", "finalAmount": 15100.5, ...}
-
-# Step 3: Inject profitable edge (JPY USD at 0.0082)
-curl -X POST 'http://localhost:8080/api/v1/demo/inject-arbitrage?from=JPY&to=USD&rate=0.0082'
-Response: {"status": "success", "msg": "Edge injected: JPY -> USD (rate: 0.0082)", ...}
-
-# Step 4: Trigger arbitrage detection
-curl 'http://localhost:8080/api/v1/exchange?from=USD&to=JPY&amount=100'
-Response (400):
-{
- "message": "Arbitrage detected! Cycle: USD -> EUR -> JPY -> USD",
- "status": 400,
- "details": {
- "arbitrageCycle": "USD -> EUR -> JPY -> USD"
- }
-}
-
-
-#### Understanding the Demo
-
-- **Real Rates**: USDEUR (0.92), EURJPY (151)
-- **Injected Edge**: JPYUSD (0.0082) - artificially good rate
-- **Cycle**: USD (1.0) EUR (0.92) JPY (139) USD (1.14) = **14% profit!**
-- **SPFA**: Detects negative weight cycle and returns path
-
-#### Adding New Features
-
-**1. Add new currency pair filtering:**
-java
-// In FastForexClient.MAJOR_CURRENCIES
-private static final Set<String> MAJOR_CURRENCIES = Set.of(
- "USD", "EUR", ... // Add here
-);
-
-
-**2. Change update frequency:**
-java
-// In RateIngestionService
-@Scheduled(fixedRate = 30000) // Change this value (ms)
-public void fetchRates() { ... }
-
-
-**3. Adjust transaction fee:**
-java
-// In RateIngestionService
-@Value("${fastforex.transaction-fee:0.003}")
-private double transactionFee; // Change in application.yaml
-
-
-**4. Add new endpoint:**
-java
-@RestController
-@RequestMapping("/api/v1/custom")
-@RequiredArgsConstructor
-public class CustomController {
- private final AlgorithmServiceI algorithmService;
- private final GraphManagementI graphManagement;
- 
- @GetMapping("/your-endpoint")
- public ResponseEntity<?> yourEndpoint() {
- // Your implementation
- }
-}
-
-
-#### Running Tests
-
-bash
-# Run all tests
-mvn test
-
-# Run specific test
-mvn test -Dtest=AlgorithmServiceTest
-
-# Run with coverage
-mvn jacoco:report
-
-
-#### Logs to Monitor
-
-
-# Rate updates (every 30s)
-[INFO] c.p.s.s.i.RateIngestionService : Fetching real exchange rates from FastForex
-
-# Graph updates
-[INFO] c.p.s.s.i.RateIngestionService : Graph updated with 1599 edges
-
-# Arbitrage detection
-[WARN] c.p.s.s.i.AlgorithmService : Negative cycle detected in graph
-
-# Demo events
-[INFO] c.p.s.c.DemoController : Arbitrage injection complete
-[INFO] c.p.s.s.i.AlgorithmService : Arbitrage cycle: [USD, EUR, JPY, USD]
-
-# Errors
-[ERROR] c.p.s.s.i.RateIngestionService : Error during rate ingestion
-
-
----
+```
 
 ## Next Steps
 
-### For FE Integration
-
-1. Review this README
-2. Test all 4 endpoints with cURL/Postman
-3. Implement currency dropdown with /api/v1/currencies
-4. Build exchange calculator UI
-5. **Handle arbitrage response** - show details.arbitrageCycle to user
-6. Handle all error cases (400, 404, 422)
-7. Add loading indicators (100-300ms API response time)
-8. Optional: Add demo mode UI to test /demo/reset and /demo/inject-arbitrage
+### For Frontend Developers
+1. Test all endpoints with cURL/Postman
+2. Implement currency dropdown with `/api/v1/currencies`
+3. Build exchange calculator UI
+4. Handle arbitrage response - display `arbitrageCycle` to users
+5. Handle error cases (400, 404)
+6. Add loading indicators (100-300ms API response time)
 
 ### For Backend Developers
-
-1. Review algorithm in [AlgorithmService.java](src/main/java/com/plozdev/smartfxapplication/service/impl/AlgorithmService.java)
-2. Test demo workflow locally (see Testing Demo Endpoints above)
+1. Review SPFA algorithm in [AlgorithmService.java](src/main/java/com/plozdev/smartfxapplication/service/impl/AlgorithmService.java)
+2. Test demo workflow locally
 3. Monitor logs for arbitrage detection
-4. Adjust MAJOR_CURRENCIES set as needed
-5. Consider rate limiting before production
+4. Adjust `MAJOR_CURRENCIES` set as needed
 
 ### For Production
-
-1. Get paid FastForex API plan (more requests if needed)
+1. Get paid FastForex API plan (more requests)
 2. Add rate limiting to API endpoints
 3. Add authentication/authorization
-4. Setup database for rate history and arbitrage opportunities
+4. Setup database for rate history
 5. Add monitoring & alerting for arbitrage detection
-6. Consider removing /demo/* endpoints or securing with auth
-7. Optimize graph structure for larger currency sets
-8. Add circuit breaker for FastForex API failures
-
----
-
-## License & Credits
-
-**Project**: SmartFX - Currency Exchange & Arbitrage Detection 
-**Built with**: Spring Boot 3, Bellman-Ford SPFA, FastForex API 
-**Last Updated**: April 2026
-
----
-
-## Support
-
-For questions or issues:
-1. Check logs in src/main/resources/ directory
-2. Verify FastForex API key in application-local.yaml
-3. Review API documentation in Swagger UI
-4. Check the architecture section above
-
-**Happy Coding!** 
+6. Secure or remove `/demo/*` endpoints
+7. Add circuit breaker for API failures 
 
 
 
