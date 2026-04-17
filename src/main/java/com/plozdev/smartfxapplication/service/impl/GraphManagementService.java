@@ -34,6 +34,16 @@ public class GraphManagementService implements GraphManagementI {
     }
 
     @Override
+    public void addEdge(EdgeInput edgeInput) {
+        lock.writeLock().lock();
+        try {
+            currentGraph.addEdge(edgeInput.getFrom(), edgeInput.getTo(), edgeInput.getWeight());
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    @Override
     public Graph getGraphSnapshot() {
         lock.readLock().lock();
         try {
