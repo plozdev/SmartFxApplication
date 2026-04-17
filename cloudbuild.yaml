@@ -1,0 +1,36 @@
+steps:
+  # Step 1: Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/smartfx-repo/smartfx:$SHORT_SHA', '.']
+    id: 'build-image'
+
+  # Step 2: Push to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/smartfx-repo/smartfx:$SHORT_SHA']
+    id: 'push-image'
+
+  # Step 3: Deploy to Cloud Run
+  - name: 'gcr.io/cloud-builders/gke-deploy'
+    args:
+      - 'run'
+      - '--filename=.'
+      - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/smartfx-repo/smartfx:$SHORT_SHA'
+      - '--location=us-central1'
+      - '--config=clouddeploy.yaml'
+    id: 'deploy-cloud-run'
+
+# Push image configuration
+images:
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/smartfx-repo/smartfx:$SHORT_SHA'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/smartfx-repo/smartfx:latest'
+
+# Build configuration
+options:
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+  
+substitutions:
+  _REGION: 'us-central1'
+  _SERVICE_NAME: 'smartfx'
+
+timeout: '1800s'

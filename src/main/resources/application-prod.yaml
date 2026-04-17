@@ -1,0 +1,57 @@
+# Config cho production deployment trên GCP
+server:
+  port: 8080
+  shutdown: graceful
+  compression:
+    enabled: true
+    min-response-size: 1024
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: SmartFXApplication
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+  mvc:
+    log-request-details: false
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    enabled: true
+
+logging:
+  level:
+    root: WARN
+    com.plozdev.smartfxapplication: INFO
+    org.springframework.boot.web: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# FastForex Configuration
+fastforex:
+  api-key: ${FASTFOREX_API_KEY:your-api-key-here}
+  base-url: https://api.fastforex.io
+  base-currency: USD
+  transaction-fee: 0.003
+  rate-update-interval: 30000
+  request-timeout: 15000
+
+# Actuator endpoints for monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info
+  endpoint:
+    health:
+      show-details: always
