@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface GraphManagementI {
     void updateGraph(List<EdgeInput> newEdges);
+    void addEdge(EdgeInput edgeInput);
     Graph getGraphSnapshot();
 }

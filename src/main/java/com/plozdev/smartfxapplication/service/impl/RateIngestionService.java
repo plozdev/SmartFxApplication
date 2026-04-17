@@ -4,6 +4,7 @@ import com.plozdev.smartfxapplication.client.FastForexClient;
 import com.plozdev.smartfxapplication.dto.FastForexFetchAllResponse;
 import com.plozdev.smartfxapplication.model.EdgeInput;
 import com.plozdev.smartfxapplication.service.GraphManagementI;
+import com.plozdev.smartfxapplication.service.RateIngestionServiceI;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,7 +16,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class RateIngestionService {
+public class RateIngestionService implements RateIngestionServiceI {
 
     private final GraphManagementI graphManagement;
     private final FastForexClient fastForexClient;
@@ -28,6 +29,7 @@ public class RateIngestionService {
 
     // Runs at configurable interval (default 30 seconds)
     @Scheduled(fixedRateString = "${fastforex.rate-update-interval:30000}")
+    @Override
     public void fetchRates() {
         try {
             log.info("Fetching real exchange rates from FastForex (base: {})...", baseCurrency);
@@ -39,7 +41,6 @@ public class RateIngestionService {
                 return;
             }
 
-            // 2️⃣ Derive tất cả edges (Direct + Reverse + Cross)
             List<EdgeInput> edges = fastForexClient.deriveAllEdges(response, transactionFee);
 
             if (edges.isEmpty()) {
@@ -47,18 +48,18 @@ public class RateIngestionService {
                 return;
             }
 
-            // 3️⃣ Update graph
             graphManagement.updateGraph(edges);
             log.info("Graph updated with {} edges from {} currencies",
                     edges.size(), response.getResults().size());
 
-            // 4️⃣ Log some sample rates
             log.debug("Sample rates from API response:");
             response.getResults().entrySet().stream()
                     .limit(5)
                     .forEach(entry -> log.debug("  {} {} -> {} : {}", 
                             baseCurrency, "→", entry.getKey(), entry.getValue()));
 
+            log.info("   Edges: {} | Currencies: {}",
+                    edges.size(), response.getResults().size());
         } catch (Exception e) {
             log.error("Error during rate ingestion", e);
         }
