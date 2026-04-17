@@ -156,6 +156,9 @@ src/main/java/com/plozdev/smartfxapplication/
 ## Screenshots
 
 ### Screen 1: Normal Exchange
+
+<img width="1919" height="928" alt="case 1" src="https://github.com/user-attachments/assets/fcf85e27-616e-4de2-b19a-9cc0a746d0b7" />
+
 Shows the main exchange interface with:
 - Currency swap panel (left) - Enter amount and select from/to currencies
 - Optimal conversion route display (right) - Shows calculated path and result
@@ -165,6 +168,9 @@ Shows the main exchange interface with:
 Use case: User performs a normal exchange USD → EUR with optimal path calculation
 
 ### Screen 2: After Arbitrage Injection
+
+<img width="1919" height="928" alt="case 2" src="https://github.com/user-attachments/assets/8fe97c7b-6b74-4f3a-9ee4-cb5ce0cb5008" />
+
 Demonstrates the demo/inject endpoint being used:
 - Same interface layout
 - But now an arbitrage edge has been injected into the graph
@@ -174,6 +180,9 @@ Demonstrates the demo/inject endpoint being used:
 Use case: Backend testing - call `/api/v1/demo/inject-arbitrage?from=JPY&to=USD&rate=0.0082`
 
 ### Screen 3: Arbitrage Detected on Exchange
+
+<img width="1919" height="928" alt="case 3" src="https://github.com/user-attachments/assets/92b922fd-96b5-4641-adfc-22c6ab2744e8" />
+
 Shows what happens when user tries to exchange after injection:
 - Exchange request triggers arbitrage detection
 - Optimal conversion route displays the **profitable cycle** instead of normal path
