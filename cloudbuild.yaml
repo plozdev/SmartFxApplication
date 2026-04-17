@@ -10,13 +10,16 @@ steps:
     id: 'push-image'
 
   # Step 3: Deploy to Cloud Run
-  - name: 'gcr.io/cloud-builders/gke-deploy'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
     args:
       - 'run'
-      - '--filename=.'
+      - 'deploy'
+      - 'smartfx'
       - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/smartfx-repo/smartfx:$SHORT_SHA'
-      - '--location=us-central1'
-      - '--config=clouddeploy.yaml'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
     id: 'deploy-cloud-run'
 
 # Push image configuration
