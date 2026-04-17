@@ -68,7 +68,30 @@ public class AlgorithmService implements AlgorithmServiceI {
 
         log.info("Exchange found: {} → {} with rate {}", from, to, finalRate);
 
-        return new ExchangeResponse(from, to, amount, finalAmount, finalRate, currencyPath);
+        return ExchangeResponse.builder()
+                .from(from)
+                .to(to)
+                .initialAmount(amount)
+                .finalAmount(finalAmount)
+                .effectiveRate(finalRate)
+                .path(currencyPath)
+                .build();
+    }
+
+    @Override
+    public List<Integer> findArbitrage(int []parent, int n, int cycleNode) {
+        int x = cycleNode;
+        for (int i = 0; i < n; ++i)
+            x = parent[x];
+
+        List<Integer> cycle = new ArrayList<>();
+        for (int v = x;; v = parent[v]) {
+            cycle.add(v);
+            if (v == x && cycle.size() > 1)
+                break;
+        }
+        Collections.reverse(cycle);
+        return cycle;
     }
 
     @Override
@@ -101,10 +124,17 @@ public class AlgorithmService implements AlgorithmServiceI {
                     dist[v] = dist[u] + w;
                     parent[v] = u;
                     cnt[v]++;
+
                     if (cnt[v] >= n) {
-                        log.warn("Negative cycle detected in graph during SPFA traversal; potential arbitrage opportunity found.");
-                        throw new ArbitrageFoundException("Arbitrage detected");
+                        List<Integer> cycleIds = findArbitrage(parent, n, v);
+                        List<String> cyclePath = toCurrencyPath(graph, cycleIds);
+                        log.warn("Arbitrage cycle: {}", cyclePath);
+                        throw new ArbitrageFoundException(
+                            "Arbitrage detected! Cycle: " + String.join(" -> ", cyclePath),
+                            cyclePath
+                        );
                     }
+
                     if (!inQueue[v]) {
                         q.add(v);
                         inQueue[v] = true;

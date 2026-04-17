@@ -28,13 +28,21 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ArbitrageFoundException.class)
     public ResponseEntity<ErrorResponse> handleArbitrageFoundException(ArbitrageFoundException ex, WebRequest request) {
+        var builder = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message(ex.getMessage())
+                .path(request.getDescription(false).replace("uri=", ""));
+
+        // Add cycle path if available
+        if (ex.getCyclePath() != null && !ex.getCyclePath().isEmpty()) {
+            var details = new HashMap<String, String>();
+            details.put("arbitrageCycle", String.join(" -> ", ex.getCyclePath()));
+            builder.details(details);
+        }
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ErrorResponse.builder()
-                        .timestamp(LocalDateTime.now())
-                        .status(HttpStatus.BAD_REQUEST.value())
-                        .message(ex.getMessage())
-                        .path(request.getDescription(false).replace("uri=", ""))
-                        .build());
+                .body(builder.build());
     }
 
     @ExceptionHandler(InvalidCurrencyException.class)
