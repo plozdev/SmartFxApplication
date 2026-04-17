@@ -1,12 +1,18 @@
 steps:
-  # Step 1: Build Docker image
+  # Step 1: Build Docker image with both SHA and latest tags
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/smartfx-repo/smartfx:$SHORT_SHA', '.']
+    args: 
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/smartfx-repo/smartfx:$SHORT_SHA'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/smartfx-repo/smartfx:latest'
+      - '.'
     id: 'build-image'
 
-  # Step 2: Push to Artifact Registry
+  # Step 2: Push images to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/smartfx-repo/smartfx:$SHORT_SHA']
+    args: ['push', '--all-tags', 'us-central1-docker.pkg.dev/$PROJECT_ID/smartfx-repo/smartfx']
     id: 'push-image'
 
   # Step 3: Deploy to Cloud Run
