@@ -1,4 +1,4 @@
-﻿# SmartFX Application
+# SmartFX Application
 
 A Spring Boot application that finds optimal currency exchange paths using graph algorithms and detects arbitrage opportunities in real-time.
 
@@ -228,6 +228,21 @@ curl "http://localhost:8080/api/v1/exchange?from=USD&to=EUR&amount=100"
 # Swagger UI
 open http://localhost:8080/swagger-ui.html
 ```
+## ☁️ Deployment (Google Cloud Platform)
+
+This project is configured to deploy to **Google Cloud Run** via **Cloud Build**.
+
+### 1. Cấu hình CI/CD tự động
+File `cloudbuild.yaml` is configured to:
+- Automatically build Docker image.
+- Tag image with both `:latest` and `:$SHORT_SHA`.
+- Push to Artifact Registry (`smartfx-repo`).
+- Automatically deploy/update to Cloud Run service `smartfx`.
+
+### 2. Deploy thủ công bằng Script
+If you want to deploy quickly from your personal computer (requires Google Cloud SDK):
+```bash
+./deploy.bat <YOUR_PROJECT_ID>
 
 ## Next Steps
 
