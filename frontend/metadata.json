@@ -1,0 +1,7 @@
+{
+  "name": "SmartFX 2.0",
+  "description": "Real-time FinTech crypto & FX arbitrage detection platform with live market rates, SPFA negative cycle engine, and deep navy terminal design system.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

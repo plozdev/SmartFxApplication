@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Deep Navy Dark Theme Palette */
+  --color-navy-primary: #0a0e17;
+  --color-navy-card: #111827;
+  --color-navy-hover: #1a2332;
+  --color-navy-border: #1e293b;
+  --color-navy-subtle: #0d1322;
+
+  /* Accent Highlights */
+  --color-profit: #22c55e;
+  --color-loss: #ef4444;
+  --color-action: #3b82f6;
+  --color-neon: #06ffa5;
+  --color-neon-glow: rgba(6, 255, 165, 0.25);
+  --color-gold: #f59e0b;
+}
+
+:root {
+  --bg-primary: #0a0e17;
+  --bg-card: #111827;
+  --bg-card-hover: #1a2332;
+  --border-color: #1e293b;
+
+  --accent-green: #22c55e;
+  --accent-red: #ef4444;
+  --accent-blue: #3b82f6;
+  --accent-neon: #06ffa5;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: #e2e8f0;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar for terminal/data tables */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0e17;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* FinTech Price Flash Animations */
+@keyframes price-flash-green {
+  0% { background-color: rgba(34, 197, 94, 0.25); }
+  100% { background-color: transparent; }
+}
+
+@keyframes price-flash-red {
+  0% { background-color: rgba(239, 68, 68, 0.25); }
+  100% { background-color: transparent; }
+}
+
+@keyframes neon-pulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(6, 255, 165, 0.2), inset 0 0 10px rgba(6, 255, 165, 0.1); }
+  50% { box-shadow: 0 0 25px rgba(6, 255, 165, 0.45), inset 0 0 15px rgba(6, 255, 165, 0.2); }
+}
+
+.flash-up {
+  animation: price-flash-green 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.flash-down {
+  animation: price-flash-red 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.neon-glow {
+  box-shadow: 0 0 20px rgba(6, 255, 165, 0.3);
+}
+
+.neon-glow-border {
+  border-color: #06ffa5;
+  box-shadow: 0 0 15px rgba(6, 255, 165, 0.25);
+}
+
+.radar-sweep {
+  background: conic-gradient(from 0deg, transparent 0deg, rgba(6, 255, 165, 0.15) 60deg, transparent 65deg);
+}
